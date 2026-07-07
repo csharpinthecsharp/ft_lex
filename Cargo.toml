@@ -1,0 +1,10 @@
+[package]
+name = "ft_lex"
+edition = "2021"
+description = ""
+
+[dependencies]
+
+[[bin]]
+name = "ft_lex"
+path = "main.rs"
