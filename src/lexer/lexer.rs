@@ -5,34 +5,49 @@ use std::default::Default;
 use std::iter::Peekable;
 use std::fs;
 use std::process;
+use std::str::Chars;
+
+fn is_space(c: Option<&char>) -> bool {
+    if c == Some(&' ') || c == Some(&'\t') {
+        return true;
+    }
+    false
+}
 
 fn get_lex_def(path: &str, tok_list: &mut Vec<Token>, mut lines: &mut Peekable<std::str::Lines<'_>>) -> i32
 {
     //let (mut err, mut  line, mut s_line, mut e_line, mut column):
     //    (i32, i32, i32, i32, i32) = (0, 1, 1, 0, 0);
 
+    let mut y: i32 = 0;
     let mut in_block: bool = false;
-    let mut err: i32 = 0;
+    let mut res: i32 = 0;
     let mut block_str: String = Default::default();
     let mut key: String = Default::default();
     let mut value: String = Default::default();
 
     while let Some(line) = lines.next() {
+        y += 1;
+
+        if line.trim().is_empty() {
+            continue;
+        }
+        
         let l = line.chars().nth(0);
         if l == Some(' ') {
             let mut tok: Token = Token::default();
-            tok.update(Ccode, line.to_string(), "".to_string(), 0, 0);
+            tok.update(Ccode, line.to_string(), "".to_string(), y, 0);
             tok_list.push(tok);
             continue;
         }
 
-        let temp_line = line.get(..2).unwrap_or("");
+        let temp_line: &str = line.get(..2).unwrap_or("");
         match temp_line {
             "%}" => {
                 in_block = false;
                 if !block_str.is_empty() {
                     let mut tok: Token = Token::default();
-                    tok.update(Block, block_str.to_string(), "".to_string(), 0, 0);
+                    tok.update(Block, block_str.to_string(), "".to_string(), y, 0);
                     tok_list.push(tok);
                     continue;
                 }
@@ -42,7 +57,7 @@ fn get_lex_def(path: &str, tok_list: &mut Vec<Token>, mut lines: &mut Peekable<s
                 continue;
             }
             "%%" => {
-                return err;
+                return res;
             }
             _=> {
                 if in_block {
@@ -50,7 +65,58 @@ fn get_lex_def(path: &str, tok_list: &mut Vec<Token>, mut lines: &mut Peekable<s
                     if block_str.len() == line.len() {
                         block_str.push_str("\n");
                     }
-                    continue ;
+                    continue;
+                }
+            }
+        }
+
+        let mut state_c = line.chars().peekable();
+        if state_c.next() == Some('%') {
+            match state_c.next() {
+                Some('s') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }
+                Some('x') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }
+                Some('p') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }
+                Some('n') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }
+                Some('a') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }
+                Some('e') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }
+                Some('k') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }
+                Some('o') => {
+                    if is_space(state_c.peek()) {
+                    }
+                    continue;
+                }    
+                _=> {
+                    eprintln!("{}:{}: unrecognized '%' directive", path, y);
+                    res += 1;
+                    continue;
                 }
             }
         }
@@ -60,24 +126,26 @@ fn get_lex_def(path: &str, tok_list: &mut Vec<Token>, mut lines: &mut Peekable<s
             continue;
         }
         if v.len() == 1 {
-            eprintln!("{}:{}: incomplete name definition", path, 0);
-            err += 1;
+            let c = line.chars().next().unwrap();
+            if !char::is_alphabetic(c) { eprintln!("{}:{}: bad character: {}", path, y, c); }
+            else { eprintln!("{}:{}: incomplete name definition", path, y); }
+            res += 1;
             continue;
-        }
+        } 
         if v.len() > 2 {
-            eprintln!("{}:{}: unrecognized rule", path, 0);
-            err += 1;
+            eprintln!("{}:{}: unrecognized rule", path, y);
+            res += 1;
             continue;
         }    
         key = v.first().unwrap().to_string();
         value = v.last().unwrap().to_string();
         if !key.is_empty() && !value.is_empty() {
             let mut tok: Token = Token::default();
-            tok.update(NamePattern, key, value, 0, 0);
+            tok.update(NamePattern, key, value, y, 0);
             tok_list.push(tok);
         }
     }
-    err
+    res
 }
 
 pub fn lexer_loop(path: &str)
