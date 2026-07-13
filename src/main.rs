@@ -1,6 +1,5 @@
 use std::env;
 use std::process;
-use std::fs::File;
 
 mod parse;
 mod structs;
